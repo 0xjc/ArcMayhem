@@ -1,4 +1,4 @@
--- ArcMayhem: Target curse indicator for Warlocks
+-- ArcMayhem: Target curse indicator for Destruction Warlock
 --
 -- Shows a solid purple square when the current target has a curse-type
 -- debuff (HARMFUL|PLAYER filter). Uses color curves + stacked StatusBar
@@ -9,6 +9,12 @@
 ---------------------------------------------------------------------------
 local _, playerClass = UnitClass("player")
 if playerClass ~= "WARLOCK" then return end
+
+---------------------------------------------------------------------------
+-- Spec gate — only activate for Destruction (267)
+---------------------------------------------------------------------------
+local DESTRO_SPEC_ID = 267
+local specGatePassed = false
 
 ---------------------------------------------------------------------------
 -- API references
@@ -24,8 +30,8 @@ local DEFAULTS = {
     borderWidth = 2,
     point = "CENTER",
     relPoint = "CENTER",
-    x = -300,
-    y = 250,
+    x = 0,
+    y = 0,
 }
 
 local db  -- assigned on ADDON_LOADED
@@ -195,9 +201,28 @@ end
 indicator:SetMovable(true)
 indicator:SetClampedToScreen(true)
 
+local function CheckSpec()
+    local specID = GetSpecializationInfo(GetSpecialization() or 0)
+    if specID == DESTRO_SPEC_ID then
+        if not specGatePassed then
+            specGatePassed = true
+            indicator:RegisterEvent("UNIT_AURA")
+            indicator:RegisterEvent("PLAYER_TARGET_CHANGED")
+        end
+        indicator:Show()
+        UpdateIndicator()
+    else
+        specGatePassed = false
+        indicator:UnregisterEvent("UNIT_AURA")
+        indicator:UnregisterEvent("PLAYER_TARGET_CHANGED")
+        ClearOverlays(1)
+        indicator:Hide()
+    end
+end
+
 indicator:RegisterEvent("ADDON_LOADED")
-indicator:RegisterEvent("UNIT_AURA")
-indicator:RegisterEvent("PLAYER_TARGET_CHANGED")
+indicator:RegisterEvent("PLAYER_LOGIN")
+indicator:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 
 indicator:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "ArcMayhem" then
@@ -210,6 +235,8 @@ indicator:SetScript("OnEvent", function(_, event, arg1)
         ApplySize()
         ApplyPosition()
         indicator:UnregisterEvent("ADDON_LOADED")
+    elseif event == "PLAYER_LOGIN" or event == "PLAYER_SPECIALIZATION_CHANGED" then
+        CheckSpec()
     elseif event == "PLAYER_TARGET_CHANGED" then
         UpdateIndicator()
     elseif event == "UNIT_AURA" and arg1 == "target" then
@@ -245,18 +272,19 @@ SlashCmdList["ARCMAYHEM"] = function(msg)
             ApplySize()
             print("|cff9966ffArcMayhem|r size set to " .. newSize .. "px.")
         else
-            print("|cff9966ffArcMayhem|r size must be 10–400.")
+            print("|cff9966ffArcMayhem|r size must be 10-400.")
         end
     else
         print("|cff9966ffArcMayhem|r commands:")
         print("  /mayhem unlock — show drag handle")
         print("  /mayhem lock — hide drag handle & save position")
-        print("  /mayhem size <px> — set indicator size (10–400)")
+        print("  /mayhem size <px> — set indicator size (10-400)")
         print("  /mayhem reset — restore defaults")
+        print("NOTE: This works off any curse cast by the player. So unfortunately, Curse of Weakness, etc. will register as a false positive. I don't have a good way to get around this issue yet.")
     end
 end
 
 ---------------------------------------------------------------------------
 -- Load message
 ---------------------------------------------------------------------------
-print("|cff9966ffArcMayhem|r loaded (Warlock) — /mayhem for commands")
+print("|cff9966ffArcMayhem|r loaded — /mayhem for commands")
