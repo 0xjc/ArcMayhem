@@ -11,10 +11,11 @@ local _, playerClass = UnitClass("player")
 if playerClass ~= "WARLOCK" then return end
 
 ---------------------------------------------------------------------------
--- Spec gate — only activate for Destruction (267)
+-- Spec + talent gate — only activate for Destruction (267) with Mayhem
 ---------------------------------------------------------------------------
-local DESTRO_SPEC_ID = 267
-local specGatePassed = false
+local DESTRO_SPEC_ID   = 267
+local MAYHEM_SPELL_ID  = 387506
+local specGatePassed   = false
 
 ---------------------------------------------------------------------------
 -- API references
@@ -203,7 +204,7 @@ indicator:SetClampedToScreen(true)
 
 local function CheckSpec()
     local specID = GetSpecializationInfo(GetSpecialization() or 0)
-    if specID == DESTRO_SPEC_ID then
+    if specID == DESTRO_SPEC_ID and IsPlayerSpell(MAYHEM_SPELL_ID) then
         if not specGatePassed then
             specGatePassed = true
             indicator:RegisterEvent("UNIT_AURA")
@@ -223,6 +224,7 @@ end
 indicator:RegisterEvent("ADDON_LOADED")
 indicator:RegisterEvent("PLAYER_LOGIN")
 indicator:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+indicator:RegisterEvent("TRAIT_CONFIG_UPDATED")
 
 indicator:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == "ArcMayhem" then
@@ -235,7 +237,8 @@ indicator:SetScript("OnEvent", function(_, event, arg1)
         ApplySize()
         ApplyPosition()
         indicator:UnregisterEvent("ADDON_LOADED")
-    elseif event == "PLAYER_LOGIN" or event == "PLAYER_SPECIALIZATION_CHANGED" then
+    elseif event == "PLAYER_LOGIN" or event == "PLAYER_SPECIALIZATION_CHANGED"
+        or event == "TRAIT_CONFIG_UPDATED" then
         CheckSpec()
     elseif event == "PLAYER_TARGET_CHANGED" then
         UpdateIndicator()
