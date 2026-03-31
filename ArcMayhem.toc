@@ -2,7 +2,7 @@
 ## Title: ArcMayhem
 ## Notes: Havoc on current target indicator for Destruction Warlock
 ## Author: Arcinde
-## Version: 1.0.0
+## Version: 1.0.1
 ## LoadOnDemand: 0
 ## SavedVariables: ArcMayhemDB
 
